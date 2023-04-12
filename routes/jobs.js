@@ -3,9 +3,8 @@ const conn = require("../db/dbConnection");
 const authorized = require("../middleware/authorize");
 const admin = require("../middleware/admin");
 const { body, validationResult } = require("express-validator");
-const upload = require("../middleware/uploadImages");
 const util = require("util"); // helper
-const fs = require("fs"); // file system
+
 
 // CREATE job [ADMIN]
 router.post(
