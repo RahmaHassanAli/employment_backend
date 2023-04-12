@@ -7,109 +7,140 @@ const upload = require("../middleware/uploadImages");
 const util = require("util"); // helper
 const fs = require("fs"); // file system
 
-// CREATE MOVIE [ADMIN]
+// CREATE job [ADMIN]
 router.post(
   "",
   admin,
-  upload.single("image"),
-  body("name")
+  body("title")
     .isString()
-    .withMessage("please enter a valid movie name")
-    .isLength({ min: 10 })
-    .withMessage("movie name should be at lease 10 characters"),
-
+    .withMessage("please enter a valid title for job ")
+    .isLength({ min: 5 })
+    .withMessage("description name should be at lease 5 characters"),
+  body("position")
+  .isIn(["full time","part time"]).withMessage("please enter a valid position part time or full time")
+    .isString()
+    .withMessage("please enter a valid position"),
   body("description")
     .isString()
     .withMessage("please enter a valid description ")
-    .isLength({ min: 20 })
-    .withMessage("description name should be at lease 20 characters"),
+    .isLength({ min: 10 })
+    .withMessage("description name should be at lease 10 characters"),
+    body("offer")
+    .isString()
+    .withMessage("please enter a valid offer ")
+    .isLength({ min: 5 })
+    .withMessage("description name should be at lease 5 characters"),
+    body("candidate_number")
+    .isNumeric()
+    .withMessage("please enter a valid candidate-number "),
+    body("qualification_id").isNumeric().withMessage("please enter a valid qualification ID"),
   async (req, res) => {
     try {
-      // 1- VALIDATION REQUEST [manual, express validation]
+      // 1- VALIDATION REQUEST
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
-
-      // 2- VALIDATE THE IMAGE
-      if (!req.file) {
-        return res.status(400).json({
-          errors: [
-            {
-              msg: "Image is Required",
-            },
-          ],
-        });
-      }
-
-      // 3- PREPARE MOVIE OBJECT
-      const movie = {
-        name: req.body.name,
+    // 2- CHECK IF qualification EXISTS OR NOT
+    const query = util.promisify(conn.query).bind(conn);
+    const qualification = await query("select * from qualification where id = ?", [
+      req.body.qualification_id,
+      console.log(req.body.qualification_id)
+    ]);
+    if (!qualification[0]) {
+      res.status(404).json({ ms: "qualification not found !" });
+    }
+      // 3- PREPARE job OBJECT
+      const job = {
+        title: req.body.title,
+        position: req.body.position,
         description: req.body.description,
-        image_url: req.file.filename,
+        offer:req.body.offer,
+        candidate_number: req.body.candidate_number,
+        qualification_id : req.body.qualification_id
       };
-
-      // 4 - INSERT MOVIE INTO DB
-      const query = util.promisify(conn.query).bind(conn);
-      await query("insert into movies set ? ", movie);
-      res.status(200).json({
-        msg: "movie created successfully !",
-      });
+      console.log(job);
+      // 4 - INSERT job INTO DB
+      await query("insert into jobs set ? ", job);
+      res.status(200).json(job);
+      // res.status(200).json({
+      //   msg: "job created successfully !",
+      // });
     } catch (err) {
       res.status(500).json(err);
+      console.log(err);
     }
   }
 );
 
-// UPDATE MOVIE [ADMIN]
+
+// UPDATE job [ADMIN]
 router.put(
   "/:id", // params
   admin,
-  upload.single("image"),
-  body("name")
-    .isString()
-    .withMessage("please enter a valid movie name")
-    .isLength({ min: 10 })
-    .withMessage("movie name should be at lease 10 characters"),
-
-  body("description")
-    .isString()
-    .withMessage("please enter a valid description ")
-    .isLength({ min: 20 })
-    .withMessage("description name should be at lease 20 characters"),
+  body("title")
+  .isString()
+  .withMessage("please enter a valid title for job ")
+  .isLength({ min: 5 })
+  .withMessage("description name should be at lease 5 characters"),
+body("position")
+.isIn(["full time","part time"]).withMessage("please enter a valid position part time or full time")
+  .isString()
+  .withMessage("please enter a valid position"),
+body("description")
+  .isString()
+  .withMessage("please enter a valid description ")
+  .isLength({ min: 10 })
+  .withMessage("description name should be at lease 10 characters"),
+  body("offer")
+  .isString()
+  .withMessage("please enter a valid offer ")
+  .isLength({ min: 5 })
+  .withMessage("description name should be at lease 5 characters"),
+  body("candidate_number")
+  .isNumeric()
+  .withMessage("please enter a valid candidate-number "),
+  body("qualification_id").isNumeric().withMessage("please enter a valid qualification ID"),
   async (req, res) => {
     try {
-      // 1- VALIDATION REQUEST [manual, express validation]
+      // 1- VALIDATION REQUEST 
       const query = util.promisify(conn.query).bind(conn);
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      // 2- CHECK IF MOVIE EXISTS OR NOT
-      const movie = await query("select * from movies where id = ?", [
+      // 2- CHECK IF job EXISTS OR NOT
+      const job = await query("select * from jobs where id = ?", [
         req.params.id,
       ]);
-      if (!movie[0]) {
-        res.status(404).json({ ms: "movie not found !" });
+      if (!job[0]) {
+        res.status(404).json({ ms: "job not found !" });
       }
 
-      // 3- PREPARE MOVIE OBJECT
-      const movieObj = {
-        name: req.body.name,
+      // 3- PREPARE job OBJECT
+      const jobOject = {
+        title: req.body.title,
+        position: req.body.position,
         description: req.body.description,
+        offer:req.body.offer,
+        candidate_number: req.body.candidate_number,
+        qualification_id : req.body.qualification_id
       };
 
-      if (req.file) {
-        movieObj.image_url = req.file.filename;
-        fs.unlinkSync("./upload/" + movie[0].image_url); // delete old image
-      }
+      // 2- CHECK IF qualification EXISTS OR NOT
+    const qualification = await query("select * from qualification where id = ?", [
+      req.body.qualification_id,
+    ]);
+    if (!qualification[0]) {
+      res.status(404).json({ ms: "qualification not found !" });
+    }
 
-      // 4- UPDATE MOVIE
-      await query("update movies set ? where id = ?", [movieObj, movie[0].id]);
+      // 4- UPDATE job
+      await query("update jobs set ? where id = ?", [jobOject, job[0].id]);
 
       res.status(200).json({
-        msg: "movie updated successfully",
+        msg: "job updated successfully",
       });
     } catch (err) {
       res.status(500).json(err);
@@ -117,25 +148,23 @@ router.put(
   }
 );
 
-// DELETE MOVIE [ADMIN]
+// DELETE job [ADMIN]
 router.delete(
   "/:id", // params
   admin,
   async (req, res) => {
     try {
-      // 1- CHECK IF MOVIE EXISTS OR NOT
+      // 1- CHECK IF job EXISTS OR NOT
       const query = util.promisify(conn.query).bind(conn);
-      const movie = await query("select * from movies where id = ?", [
+      const job = await query("select * from jobs where id = ?", [
         req.params.id,
       ]);
-      if (!movie[0]) {
-        res.status(404).json({ ms: "movie not found !" });
+      if (!job[0]) {
+        res.status(404).json({ ms: "job not found !" });
       }
-      // 2- REMOVE MOVIE IMAGE
-      fs.unlinkSync("./upload/" + movie[0].image_url); // delete old image
-      await query("delete from movies where id = ?", [movie[0].id]);
+      await query("delete from jobs where id = ?", [job[0].id]);
       res.status(200).json({
-        msg: "movie delete successfully",
+        msg: "job delete successfully",
       });
     } catch (err) {
       res.status(500).json(err);
@@ -149,72 +178,22 @@ router.get("", async (req, res) => {
   let search = "";
   if (req.query.search) {
     // QUERY PARAMS
-    search = `where name LIKE '%${req.query.search}%' or description LIKE '%${req.query.search}%'`;
+    search = `where title LIKE '%${req.query.search}%'`;
   }
-  const movies = await query(`select * from movies ${search}`);
-  movies.map((movie) => {
-    movie.image_url = "http://" + req.hostname + ":4000/" + movie.image_url;
-  });
-  res.status(200).json(movies);
+  const jobs = await query(`select * from jobs ${search}`);
+  res.status(200).json(jobs);
 });
 
-// SHOW MOVIE [ADMIN, USER]
+// SHOW job [ADMIN, USER]
 router.get("/:id", async (req, res) => {
   const query = util.promisify(conn.query).bind(conn);
-  const movie = await query("select * from movies where id = ?", [
+  const jobs = await query("select * from jobs where id = ?", [
     req.params.id,
   ]);
-  if (!movie[0]) {
-    res.status(404).json({ ms: "movie not found !" });
+  if (!jobs[0]) {
+    res.status(404).json({ ms: "job not found !" });
   }
-  movie[0].image_url = "http://" + req.hostname + ":4000/" + movie[0].image_url;
-  movie[0].reviews = await query(
-    "select * from user_movie_review where movie_id = ?",
-    movie[0].id
-  );
-  res.status(200).json(movie[0]);
+  res.status(200).json(jobs[0]);
 });
-
-// MAKE REVIEW [ADMIN, USER]
-router.post(
-  "/review",
-  authorized,
-  body("movie_id").isNumeric().withMessage("please enter a valid movie ID"),
-  body("review").isString().withMessage("please enter a valid Review"),
-  async (req, res) => {
-    try {
-      const query = util.promisify(conn.query).bind(conn);
-      // 1- VALIDATION REQUEST [manual, express validation]
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      // 2- CHECK IF MOVIE EXISTS OR NOT
-      const movie = await query("select * from movies where id = ?", [
-        req.body.movie_id,
-      ]);
-      if (!movie[0]) {
-        res.status(404).json({ ms: "movie not found !" });
-      }
-
-      // 3 - PREPARE MOVIE REVIEW OBJECT
-      const reviewObj = {
-        user_id: res.locals.user.id,
-        movie_id: movie[0].id,
-        review: req.body.review,
-      };
-
-      // 4- INSERT MOVIE OBJECT INTO DATABASE
-      await query("insert into user_movie_review set ?", reviewObj);
-
-      res.status(200).json({
-        msg: "review added successfully !",
-      });
-    } catch (err) {
-      res.status(500).json(err);
-    }
-  }
-);
 
 module.exports = router;

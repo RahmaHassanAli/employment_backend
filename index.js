@@ -4,6 +4,7 @@ const app = express();
 
 // ====================  GLOBAL MIDDLEWARE ====================
 app.use(express.json());
+
 app.use(express.urlencoded({ extended: true })); // TO ACCESS URL FORM ENCODED
 app.use(express.static("upload"));
 const cors = require("cors");
@@ -12,6 +13,7 @@ app.use(cors()); // ALLOW HTTP REQUESTS LOCAL HOSTS
 // ====================  Required Module ====================
 const auth = require("./routes/auth");
 const jobs = require("./routes/jobs");
+//const qualification = require("./routes/qualification");
 
 // ====================  RUN THE APP  ====================
 app.listen(4000, "localhost", () => {
@@ -20,4 +22,5 @@ app.listen(4000, "localhost", () => {
 
 // ====================  API ROUTES [ ENDPOINTS ]  ====================
 app.use("/auth", auth);
-app.use("/movies", jobs);
+app.use("/jobs", jobs);
+//app.use("/jobs", qualification);
